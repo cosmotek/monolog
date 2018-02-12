@@ -2,7 +2,7 @@ package monolog_test
 
 import "github.com/rucuriousyet/monolog"
 
-func ExamplePromptChain() {
+func ExampleDo() {
 	err := monolog.New(nil).
 		Add(monolog.Prompt{
 			Msg: "Would you like to dance? (y/N)",
@@ -18,5 +18,5 @@ func ExamplePromptChain() {
 		panic(err)
 	}
 
-	// Output: nil
+	// WouldOutput: Would you like to dance? (y/N): Would you like to sing? (y/N): Would you like to kiss?
 }
