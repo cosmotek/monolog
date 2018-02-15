@@ -1,8 +1,6 @@
 # monolog
 Chainable CLI Prompting Library for Go
 
-[godoc](https://godoc.org/github.com/rucuriousyet/monolog)
-
 This is just a little library I wrote for use with Stackmesh CLI tooling. It only uses Golang stdlib packages and is somewhat extensible. If you would like to use this in your own project, take a look at the following:
 
 + [godoc](https://godoc.org/github.com/rucuriousyet/monolog)
