@@ -6,14 +6,27 @@ import (
 	"os"
 )
 
+// Cmd is a simple type used for command constants returned to
+// the prompter by prompt functions
 type Cmd uint
 
 const (
-	Continue  Cmd = 0
-	Retry     Cmd = 1
+	// Continue tells the prompter to continue to the next prompt
+	Continue Cmd = 0
+
+	// Retry tells the prompter to re-run the currentd prompt
+	Retry Cmd = 1
+
+	// ExitChain tells the prompter to exit the chain now
+	// (skipping all other prompts)
 	ExitChain Cmd = 2
 )
 
+// Prompt is a simple function type that takes a prompter
+// pointer and returns a command for the prompter to exec.
+// This should be used to call the prompter.Read and
+// prompter.Write methods, validate the received input and
+// return the appropriate command.
 type Prompt func(p *Prompter) Cmd
 
 // Prompter is a  prompt chain object
@@ -25,11 +38,17 @@ type Prompter struct {
 	prompts []Prompt
 }
 
+// Read reads a string from the reader provided to the
+// prompter. This function will block until input is
+// received.
 func (p *Prompter) Read() string {
 	p.scanner.Scan()
 	return p.scanner.Text()
 }
 
+// Write writes a string to the writer provided to the
+// prompter itself. If an error is encountered, it should
+// be returned by the Do function after the prompt finishes
 func (p *Prompter) Write(body string) {
 	_, err := p.writer.Write([]byte(body))
 	if err != nil {
@@ -59,7 +78,7 @@ func New(reader io.Reader, writer io.Writer) *Prompter {
 	}
 }
 
-// Add appends any number of prompt objects to
+// Add appends any number of prompt functions to
 // the chain and returns it. Keep in mind that the
 // chain is first in, first out.
 func (p *Prompter) Add(prompts ...Prompt) *Prompter {
