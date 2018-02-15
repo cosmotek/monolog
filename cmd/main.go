@@ -1,4 +1,4 @@
-package monolog_test
+package main
 
 import (
 	"strings"
@@ -6,7 +6,7 @@ import (
 	"github.com/rucuriousyet/monolog"
 )
 
-func ExamplePrompter() {
+func main() {
 	err := monolog.New(nil, nil).
 		Add(func(p *monolog.Prompter) monolog.Cmd {
 			p.Write("are you a human? (y/N): ")
@@ -20,7 +20,7 @@ func ExamplePrompter() {
 				return monolog.ExitChain
 			}
 
-			p.Write("invalid input, please retry.\n")
+			p.Write("invalid input, please retry.\n\n")
 			return monolog.Retry
 		}).
 		Add(func(p *monolog.Prompter) monolog.Cmd {
@@ -36,7 +36,7 @@ func ExamplePrompter() {
 				return monolog.Continue
 			}
 
-			p.Write("invalid input, please retry.\n")
+			p.Write("invalid input, please retry.\n\n")
 			return monolog.Retry
 		}).Do()
 

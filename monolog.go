@@ -2,47 +2,39 @@ package monolog
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"os"
 )
 
-// Prompt is a simple prompt object containing the
-// various situational messages, rules and handlers
-// of a command line prompt. It can use regex, function
-// handlers or boolean evaluation to respond, quit the
-// chain etc.
-type Prompt struct {
-	Msg string
+type Cmd uint
 
-	AcceptRegex  []string
-	DeclineRegex []string
-}
+const (
+	Continue  Cmd = 0
+	Retry     Cmd = 1
+	ExitChain Cmd = 2
+)
 
-// Eval takes an input string, evaluates it against
-// it's ruleset, and returns a "canContinue" boolean
-// an error. If the error is not nil, but canContinue
-// is true, the prompt will be repeated. If canContinue
-// is false and the error is not nil, the chain will
-// exit and print out the error
-func (p Prompt) Eval(input string) (bool, error) {
-	switch input {
-	case "y":
-		return true, nil
-	case "n":
-		return false, errors.New("goodbye.")
-	default:
-		return true, errors.New("unrecognized input, please try again.\n\n")
-	}
-
-	return true, nil
-}
+type Prompt func(p *Prompter) Cmd
 
 // Prompter is a  prompt chain object
 type Prompter struct {
-	reader  io.Reader
+	scanner *bufio.Scanner
+	errbuff error
+
 	writer  io.Writer
 	prompts []Prompt
+}
+
+func (p *Prompter) Read() string {
+	p.scanner.Scan()
+	return p.scanner.Text()
+}
+
+func (p *Prompter) Write(body string) {
+	_, err := p.writer.Write([]byte(body))
+	if err != nil {
+		p.errbuff = err
+	}
 }
 
 // New creates and returns a new prompter chain reading
@@ -55,12 +47,13 @@ func New(reader io.Reader, writer io.Writer) *Prompter {
 		reader = os.Stdin
 	}
 
+	scanner := bufio.NewScanner(reader)
 	if writer == nil {
 		writer = os.Stdout
 	}
 
 	return &Prompter{
-		reader:  reader,
+		scanner: scanner,
 		writer:  writer,
 		prompts: make([]Prompt, 0),
 	}
@@ -81,30 +74,16 @@ func (p *Prompter) Add(prompts ...Prompt) *Prompter {
 // be able to function in a go routine as long as the
 // reader in use is async safe (may need a mutex-lock).
 func (p *Prompter) Do() error {
-	scanner := bufio.NewScanner(p.reader)
-
 	for _, prompt := range p.prompts {
 		for {
-			_, err := p.writer.Write([]byte(prompt.Msg))
-			if err != nil {
-				return err
+			cmd := prompt(p)
+			if p.errbuff != nil {
+				return p.errbuff
 			}
 
-			scanner.Scan()
-			canContinue, resperr := prompt.Eval(scanner.Text())
-
-			if resperr != nil {
-				_, err = p.writer.Write([]byte(resperr.Error()))
-				if err != nil {
-					return err
-				}
-			}
-
-			if !canContinue {
+			if cmd == ExitChain {
 				return nil
-			}
-
-			if resperr == nil {
+			} else if cmd == Continue {
 				break
 			}
 		}
